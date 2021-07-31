@@ -21,7 +21,10 @@ export default function AddFood({navigation}) {
         .then(() => {
             console.log('Added!');
         });
-        navigation.navigate('Menu');
+
+        setFoodName('');
+        setFoodImage('');
+        navigation.navigate('Menu', {screen:'FoodList'});
     };
 
     return(

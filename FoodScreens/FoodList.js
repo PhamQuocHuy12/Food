@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, SafeAreaView, Image } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList,Animated,  SafeAreaView, Image } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useState, useEffect } from 'react';
 import firestore from '@react-native-firebase/firestore';
 
@@ -10,7 +11,6 @@ const foods = firestore().collection('Food').get();
     const [foods, setFoods] = useState([]); 
     const [foodName, setFoodName] = useState(null);
     const [selectedKey, setSelectedKey] = useState(null);
-    const [isEditing, setIsEditing] =useState(true);
 
     useEffect(() => {
       const subscriber = firestore()
@@ -68,29 +68,39 @@ const foods = firestore().collection('Food').get();
       setSelectedKey(key);
     }
 
+
     const handleOnChangeName = (text) => setFoodName(text);
 
-    return (
-      <SafeAreaView style={styles.container}>
-        
-        <FlatList
-          data={foods}
-          renderItem={({item}) => (
-            <TouchableOpacity style={styles.item} onPress={() => seeItemDetail(item.key, item.ingredient, item.instruction)}>
+    const Item = ({item}) => {
+
+      const rightSwipe = (progress, dragX) => {
+        const scale = dragX.interpolate({
+          inputRange: [0, 100],
+          outputRange: [0, 1],
+          extrapolate: 'clamp',
+        });
+
+        return (
+          <View style={{alignItems:'center'}}>
+          <TouchableOpacity onPress={() => deleteItem(item.key)} activeOpacity={0.6}>
+            <View style={styles.deleteBox}>
+              <Animated.Text style={{transform: [{scale: scale}]}}>
+                Delete
+              </Animated.Text>
+            </View>
+          </TouchableOpacity>
+          </View>
+        );
+      };
+      return (
+        <Swipeable renderLeftActions={rightSwipe}>
+        <TouchableOpacity onLongPress={() => editItemTitle(item.title, item.key)} 
+                          style={styles.item} 
+                          onPress={() => seeItemDetail(item.key, item.ingredient, item.instruction)}>
                 <Image style={styles.foodImage} source={{uri: item.image}}></Image>
                     {selectedKey!=item.key && 
                       <View>
                         <Text style={styles.title}>{item.title}</Text>
-                        <TouchableOpacity style={{alignSelf:'flex-start', backgroundColor: '#6495ED'}}
-                                        onPress={() => editItemTitle(item.title, item.key)}
-                                        >
-                            <Text>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={{alignSelf:'flex-start', backgroundColor: '#6495ED'}}
-                                        onPress={() => deleteItem(item.key)}
-                                        >
-                            <Text>Delete</Text>
-                        </TouchableOpacity>
                       </View>
                     }
                     {selectedKey==item.key &&
@@ -102,8 +112,18 @@ const foods = firestore().collection('Food').get();
                         </TouchableOpacity>
                       </View>
                     }
-            </TouchableOpacity>
-          )}
+        </TouchableOpacity>
+        </Swipeable>
+      )
+    }
+
+    return (
+      <SafeAreaView style={styles.container}>
+        
+        <FlatList
+          data={foods}
+          renderItem={({item}) => <Item item={item}></Item>
+          }
           keyExtractor={item => item.key.toString()}
         />
         <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('AddFood') }> 
@@ -148,6 +168,16 @@ const foods = firestore().collection('Food').get();
        alignSelf:'flex-end',
        justifyContent:'center',
        margin: '5%',
+    },
+    deleteBox: {
+      padding: 10,
+      alignItems:'center',
+      marginVertical: 8,
+      marginHorizontal: 16,
+      borderRadius: 10,
+      backgroundColor: 'pink',
+      justifyContent: 'center',
+      height: 105,
     },
   });
 
