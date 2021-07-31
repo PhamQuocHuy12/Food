@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, SafeAreaView, Image, SectionList, Button } from 'react-native';
-import { useState, useEffect, useCallback  } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
+import { useState  } from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import firestore from '@react-native-firebase/firestore';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -23,7 +23,6 @@ export default function Detail({route, navigation}){
           <Tab.Screen name="Instruction" 
                       component={Instruction} 
                       initialParams={{instruction: instruction, key: key}}
-                      
                       />
         </Tab.Navigator>
       );
@@ -53,13 +52,26 @@ function Ingredients({route, navigation}) {
         }
     }
 
+    const updateItem = (data) => {
+      setIngredient(data);
+      firestore()
+        .collection('Food')
+        .doc(params.key)
+        .update({
+          ingredient: data,
+        })
+        .then(() => {
+          console.log('Data updated!');
+        });
+    }
+
     return (
       <View style={styles.container}>
 
         <DraggableFlatList
           data={ingredient}
           keyExtractor={(item, index) => index.toString()}
-          onDragEnd={({ data }) => setIngredient(data)}
+          onDragEnd={({data }) => updateItem(data)}
           renderItem={renderItem}/>
 
           <TouchableOpacity style={styles.buttonComponent}
@@ -69,6 +81,10 @@ function Ingredients({route, navigation}) {
       </View>
       );
   }
+
+//=============================================================================================
+
+
   function Instruction({route}) {
     const params = route.params;
     const [instruction, setInstruction] = useState(params.instruction);
@@ -90,13 +106,26 @@ function Ingredients({route, navigation}) {
       </View>
     );
 
+    const updateItem = (data) => {
+      setInstruction(data);
+      firestore()
+        .collection('Food')
+        .doc(params.key)
+        .update({
+          instruction: data,
+        })
+        .then(() => {
+          console.log('Data updated!');
+        });
+    }
+
     return (
       <View style={styles.container}>
 
         <DraggableFlatList
           data={instruction}
           keyExtractor={(item, index) => index.toString()}
-          onDragEnd={({ data }) => setInstruction(data)}
+          onDragEnd={({ data }) => updateItem(data)}
           renderItem={renderItem}/>
 
           <TouchableOpacity style={styles.buttonComponent}
