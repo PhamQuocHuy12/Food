@@ -5,6 +5,13 @@ import { useState  } from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import firestore from '@react-native-firebase/firestore';
 import DraggableFlatList from 'react-native-draggable-flatlist';
+// App.tsx
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'ReactNativeFiberHostComponent: Calling getNode() on the ref of an Animated component is no longer necessary. You can now directly use the ref instead. This method will be removed in a future release.',
+]);
+
 
 
 const Tab = createMaterialTopTabNavigator();
@@ -34,22 +41,74 @@ const instructionSteps = "Đập trứng cho vào chén và đánh tan. Hành t�
 function Ingredients({route, navigation}) {
     const params = route.params;
     const [ingredient, setIngredient] =useState(params.ingredient);
-    const [isAdding, setIsAdding] =useState(false);
+    const [itemContent, setItemContent] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
 
-    const renderItem = ({ item, drag }) => (
+
+    const Item = ({item, index, drag}) => (
       <View style={styles.item}>
-        <TouchableOpacity onLongPress={drag}>
-          <Text>{item}</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity  onLongPress={drag}>
+        {selectedItem == index && 
+          <View style={styles.container2}>
+            <TextInput style={{flex: 1}} value={itemContent} onChangeText={handleOnChangeName} autoFocus={true} ></TextInput>
+
+            <TouchableOpacity style={styles.itemButton} onPress={() => saveButton(index)}>
+              <Text>Save</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.itemButton} onPress={() => deleteButton(index)}>
+              <Text>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        {selectedItem !== index && 
+          <View style={styles.container2}>
+            <Text style={{flex: 1}}>{item}</Text>
+
+            <TouchableOpacity style={styles.itemButton} onPress={() => editButton(item, index)}>
+              <Text>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.itemButton} onPress={deleteButton}>
+              <Text>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        }  
+      </TouchableOpacity>
+    </View>
     );
 
-    const bottomButtonHandling = () => {
-        if(isAdding == false){
-          setIsAdding(true);
-        } else {
-          setIsAdding(false);
-        }
+    const renderItem = ({ item, index, drag }) => {
+      return(
+        <Item item={item} index={index} drag={drag}></Item>
+      );
+    }
+
+    const handleOnChangeName = (text) => {
+        setItemContent(text);
+    }
+
+    const deleteButton = (index) => {
+      var newIngredient = [...ingredient];
+      newIngredient.splice(index, 1);
+      updateItem(newIngredient);
+    }
+    const editButton = (item, index) => {
+      setSelectedItem(index);
+      setItemContent(item);
+    }
+    const saveButton = (index) => {
+      setSelectedItem(null);
+      var newIngredient = [...ingredient];
+      newIngredient[index] = itemContent;
+      updateItem(newIngredient);
+    }
+    
+    //Chỗ này cần fix
+    const addButton = () => {
+        var newIngredient = [...ingredient];
+        newIngredient.push('Edit me');
+        updateItem(newIngredient);
     }
 
     const updateItem = (data) => {
@@ -72,11 +131,13 @@ function Ingredients({route, navigation}) {
           data={ingredient}
           keyExtractor={(item, index) => index.toString()}
           onDragEnd={({data }) => updateItem(data)}
-          renderItem={renderItem}/>
+          renderItem={(item, index) => 
+          renderItem(item, index)
+          }/>
 
           <TouchableOpacity style={styles.buttonComponent}
-                            onPress={bottomButtonHandling}>
-            <Text>{isAdding? 'Save': 'Add'}</Text>
+                            onPress={addButton}>
+            <Text>Add</Text>
           </TouchableOpacity>
       </View>
       );
@@ -146,6 +207,7 @@ function Ingredients({route, navigation}) {
     item: {
       backgroundColor: '#fff',
       padding: 10,
+      // width:'90%',
       marginVertical: 8,
       marginHorizontal: 16,
       borderWidth: 3,
@@ -169,6 +231,15 @@ function Ingredients({route, navigation}) {
       justifyContent: 'center',
       marginBottom: 12,
       alignSelf:'center'
-  },
+    },
+    itemButton: {
+      backgroundColor:'#6495ED', 
+      alignSelf:'flex-end'
+    },
+    container2: {
+      flexDirection: 'row',
+      alignContent:'space-between',
+      width: '100%',
+    }
   });
     
